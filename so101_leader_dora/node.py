@@ -11,15 +11,15 @@ logger = logging_mp.get_logger(__name__)
 CONNECT_TIMEOUT_FRAME = 10
 
 
-class RobotNode:
+class TeleoperatorNode:
     pass
 
-class DoraRobotNode(RobotNode):
+class DoraTeleoperatorNode(TeleoperatorNode):
     pass
 
-class SO101FollowerDoraRobotNode(DoraRobotNode):
+class SO101LeaderDoraTeleoperatorNode(DoraTeleoperatorNode):
     def __init__(self):
-        self.node = Node("so101_follower_dora")
+        self.node = Node("so101_leader_dora")
         
         self.recv_images: Dict[str, Any] = {}
         self.recv_joint: Dict[str, Any] = {}

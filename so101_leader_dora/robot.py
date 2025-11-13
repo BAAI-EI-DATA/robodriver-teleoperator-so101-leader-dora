@@ -4,112 +4,42 @@ import logging_mp
 import numpy as np
 
 from typing import Any
-from functools import cached_property
 
-from lerobot.cameras import make_cameras_from_configs
 from lerobot.utils.errors import DeviceNotConnectedError, DeviceAlreadyConnectedError
-from lerobot.robots.robot import Robot
+from lerobot.teleoperators.teleoperator import Teleoperator
 
-from .config import SO101FollowerDoraRobotConfig
-from .status import SO101FollowerDoraRobotStatus
-from .node import SO101FollowerDoraRobotNode
+from .config import SO101LeaderDoraTeleoperatorConfig
+from .status import  SO101LeaderDoraTeleoperatorStatus
+from .node import  SO101LeaderDoraTeleoperatorNode
 
 
 logger = logging_mp.get_logger(__name__)
 
 
-class SO101FollowerDoraRobot(Robot):
-    config_class = SO101FollowerDoraRobotConfig
-    name = "so101_follower_dora"
+class SO101LeaderDoraTeleoperator(Teleoperator):
+    config_class = SO101LeaderDoraTeleoperatorConfig
+    name = "so101_leader_dora"
 
-
-    def __init__(self, config: SO101FollowerDoraRobotConfig):
+    def __init__(self, config: SO101LeaderDoraTeleoperatorConfig):
         self.config = config
-        self.robot_type = self.config.type
-        self.use_videos = self.config.use_videos
-        self.microphones = self.config.microphones
+        self.teleoperator_type = self.config.type
 
-        self.follower_arms = {}
-        self.follower_arms['main_follower'] = self.config.follower_arms["main"]
+        self.leader_arms = {}
+        self.leader_arms['main_leader'] = self.config.leader_arms["main"]
 
-        self.cameras = make_cameras_from_configs(self.config.cameras)
-        
-        self.connect_excluded_cameras = ["image_pika_pose"]
+        self.status = SO101LeaderDoraTeleoperatorStatus()
+        self.teleoperator_dora_node = SO101LeaderDoraTeleoperatorNode()
+        self.teleoperator_dora_node.start()
 
-        self.status = SO101FollowerDoraRobotStatus()
-        self.robot_dora_node = SO101FollowerDoraRobotNode()
-        self.robot_dora_node.start()
-
-        
         self.is_connected = False
         self.logs = {}
 
-
     @property
-    def _motors_ft(self) -> dict[str, type]:
-        return {f"{motor}.pos": float for _arm, bus in self.follower_arms.items() for motor in bus.motors}
-
-    @property
-    def _cameras_ft(self) -> dict[str, tuple]:
-        return {
-            cam: (self.config.cameras[cam].height, self.config.cameras[cam].width, 3) for cam in self.cameras
-        }
-
-    @cached_property
-    def observation_features(self) -> dict[str, type | tuple]:
-        return {**self._motors_ft, **self._cameras_ft}
-
-    @cached_property
     def action_features(self) -> dict[str, type]:
-        return self._motors_ft
-    
-
-    # def get_motor_names(self, arms: dict[str, dict]) -> list:
-    #     return [f"{arm}_{motor}" for arm, bus in arms.items() for motor in bus.motors]
-
-    # @property
-    # def camera_features(self) -> dict:
-    #     cam_ft = {}
-    #     for cam_key, cam in self.cameras.items():
-    #         key = f"observation.images.{cam_key}"
-    #         cam_ft[key] = {
-    #             "shape": (cam.height, cam.width, cam.channels),
-    #             "names": ["height", "width", "channels"],
-    #             "info": None,
-    #         }
-    #     return cam_ft
-    
-    # @property
-    # def microphone_features(self) -> dict:
-    #     mic_ft = {}
-    #     for mic_key, mic in self.microphones.items():
-    #         key = f"observation.audio.{mic_key}"
-    #         mic_ft[key] = {
-    #             "shape": (1,),
-    #             "names": ["channels"],
-    #             "info": None,
-    #         }
-    #     return mic_ft
-    
-    # @property
-    # def motor_features(self) -> dict:
-    #     action_names = self.get_motor_names(self.leader_arms)
-    #     state_names = self.get_motor_names(self.follower_arms)
-    #     return {
-    #         "action": {
-    #             "dtype": "float32",
-    #             "shape": (len(action_names),),
-    #             "names": action_names,
-    #         },
-    #         "observation.state": {
-    #             "dtype": "float32",
-    #             "shape": (len(state_names),),
-    #             "names": state_names,
-    #         },
-    #     }
+        return {f"{motor}.pos": float for _arm, bus in self.follower_arms.items() for motor in bus.motors}
     
     def connect(self):
-        timeout = 50  # 统一的超时时间（秒）
+        timeout = 50
         start_time = time.perf_counter()
 
         if self.is_connected:

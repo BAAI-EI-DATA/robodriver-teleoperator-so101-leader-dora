@@ -1,4 +1,4 @@
-# RoboDriver-Robot-SO101-Follower-Dora
+# RoboDriver-Teleoperator-SO101-Leader-Dora
 
 ## Start
 

@@ -1,3 +1,3 @@
-from robot import SO101FollowerDoraRobot
-from config import SO101FollowerDoraRobotConfig
-from status import SO101FollowerDoraRobotStatus
+from robot import SO101LeaderDoraRobot
+from config import SO101LeaderDoraRobotConfig
+from status import SO101LeaderDoraRobotStatus

@@ -1,39 +1,25 @@
-import abc
 from dataclasses import dataclass, field
-from typing import Sequence, Dict
+from typing import Dict
 
-import draccus
-
-# from operating_platform.robot.robots.com_configs.cameras import (
-#     CameraConfig,
-#     OpenCVCameraConfig,
-# )
-
-# from operating_platform.robot.robots.com_configs.motors import (
-#     FeetechMotorsBusConfig,
-#     MotorsBusConfig,
-# )
-
-# from operating_platform.robot.robots.configs import RobotConfig, ManipulatorRobotConfig
-
-from lerobot.robots.config import RobotConfig
-
+from lerobot.teleoperators.config import TeleoperatorConfig
 from lerobot.cameras import CameraConfig
 from lerobot.cameras.configs import ColorMode
 from lerobot.cameras.opencv import OpenCVCameraConfig
+
 
 class ArmConfig():
     def __init__(self):
         self.port = None
         self.motors = None
 
-@RobotConfig.register_subclass("so101_follower_dora")
+
+@TeleoperatorConfig.register_subclass("so101_leader_dora")
 @dataclass
-class SO101FollowerDoraRobotConfig(RobotConfig):
-    follower_arms: Dict[str, Dict] = field(
+class SO101LeaderDoraTeleoperatorConfig(TeleoperatorConfig):
+    leader_arms: Dict[str, Dict] = field(
         default_factory=lambda: {
             "main": ArmConfig(
-                port="/dev/ttyACM1",
+                port="/dev/ttyACM0",
                 motors={
                     "joint_shoulder_pan": [1, "sts3215"],
                     "joint_shoulder_lift": [2, "sts3215"],
@@ -45,35 +31,3 @@ class SO101FollowerDoraRobotConfig(RobotConfig):
             ),
         }
     )
-
-    cameras: Dict[str, CameraConfig] = field(
-        default_factory=lambda: {
-            "image_top": OpenCVCameraConfig(
-                camera_index=0,
-                fps=30,
-                width=640,
-                height=480,
-            ),
-            "image_wrist": OpenCVCameraConfig(
-                camera_index=1,
-                fps=30,
-                width=640,
-                height=480,
-            ),
-            "image_top_dep": OpenCVCameraConfig(
-                camera_index=2,
-                fps=30,
-                width=640,
-                height=480,
-            ),
-        }
-    )
-
-    use_videos: bool = False
-
-    microphones: Dict[str, int] = field(
-        default_factory=lambda: {
-        }
-    )
-    
-    super().__post_init__()
