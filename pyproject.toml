@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robodriver_teleoperator_so101_leader_dora"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "Apache License 2.0"
+authors = [
+    {name = "Xiang Yang", email = "yangxiang@baai.ac.cn"},
+]
+keywords = ["robotics", "lerobot", "so101"]
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["so101_leader_dora"]
