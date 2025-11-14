@@ -1,3 +1,3 @@
-from robot import SO101LeaderDoraTeleoperator
+from teleoperator import SO101LeaderDoraTeleoperator
 from config import SO101LeaderDoraTeleoperatorConfig
 from status import SO101LeaderDoraTeleoperatorStatus
