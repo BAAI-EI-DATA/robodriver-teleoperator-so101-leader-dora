@@ -21,28 +21,38 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
     name = "so101_leader_dora"
 
     def __init__(self, config: SO101LeaderDoraTeleoperatorConfig):
+        super().__init__(config)
         self.config = config
         self.teleoperator_type = self.config.type
 
-        self.leader_arms = {}
-        self.leader_arms['main_leader'] = self.config.leader_arms["main"]
+        # self.leader_arms = {}
+        # self.leader_arms['main_leader'] = self.config.leader_arms["main"]
+        self.motors = config.motors # 大道至简。所有的action，不管是左右手臂，还是头部等等，能动的都算做motor。
 
         self.status = SO101LeaderDoraTeleoperatorStatus()
         self.teleoperator_dora_node = SO101LeaderDoraTeleoperatorNode()
         self.teleoperator_dora_node.start()
 
-        self.is_connected = False
+        self.connected = False
         self.logs = {}
 
     @property
     def action_features(self) -> dict[str, type]:
-        return {f"{motor}.pos": float for _arm, bus in self.leader_arms.items() for motor in bus.motors}
+        return {f"{motor}.pos": float for motor in self.motors}
+    
+    @property
+    def feedback_features(self) -> dict[str, type]:
+        return {}
+    
+    @property
+    def is_connected(self) -> bool:
+        return self.connected
     
     def connect(self):
-        timeout = 50
+        timeout = 20
         start_time = time.perf_counter()
 
-        if self.is_connected:
+        if self.connected:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
 
         # 定义所有需要等待的条件及其错误信息
@@ -50,9 +60,9 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
             (
                 lambda: all(
                     any(name in key for key in self.teleoperator_dora_node.recv_joint)
-                    for name in self.leader_arms
+                    for name in self.motors
                 ),
-                lambda: [name for name in self.leader_arms if not any(name in key for key in self.teleoperator_dora_node.recv_joint)],
+                lambda: [name for name in self.motors if not any(name in key for key in self.teleoperator_dora_node.recv_joint)],
                 "等待主臂关节角度超时"
             ),
         ]
@@ -95,7 +105,7 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
                         #     received = [name for name in self.cameras if name not in missing]
                         # else:
                         #     received = [name for name in self.follower_arms if name not in missing]
-                        received = [name for name in self.leader_arms if name not in missing]
+                        received = [name for name in self.motors if name not in missing]
 
                         # 构造错误信息
                         msg = f"{base_msg}: 未收到 [{', '.join(missing)}]; 已收到 [{', '.join(received)}]"
@@ -121,9 +131,9 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
 
         # 主臂数据状态
         arm_data_types = ["主臂关节角度",]
-        for i, data_type in enumerate(arm_data_types, 1):
+        for i, data_type in enumerate(arm_data_types, 0):
             if conditions[i][0]():
-                arm_received = [name for name in self.leader_arms 
+                arm_received = [name for name in self.motors 
                             if any(name in key for key in (self.teleoperator_dora_node.recv_joint,)[i-1])]
                 success_messages.append(f"{data_type}: {', '.join(arm_received)}")
         
@@ -145,13 +155,13 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
         for i in range(self.status.specifications.arm.number):
             self.status.specifications.arm.information[i].is_connect = True
 
-        self.is_connected = True
+        self.connected = True
     
     # def teleop_step(
     #     self, record_data=False, 
     # ) -> None | tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
 
-    #     if not self.is_connected:
+    #     if not self.connected:
     #         raise DeviceNotConnectedError(
     #             f"{self} is not connected. You need to run `robot.connect()`."
     #         )
@@ -209,9 +219,30 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
 
     #     # print("end teleoperate record")
     #     return obs_dict, action_dict
+
+    @property
+    def is_calibrated(self) -> bool:
+        """Whether the teleoperator is currently calibrated or not. Should be always `True` if not applicable"""
+        return True
+
+    def calibrate(self) -> None:
+        """
+        Calibrate the teleoperator if applicable. If not, this should be a no-op.
+
+        This method should collect any necessary data (e.g., motor offsets) and update the
+        :pyattr:`calibration` dictionary accordingly.
+        """
+        pass
+
+    def configure(self) -> None:
+        """
+        Apply any one-time or runtime configuration to the teleoperator.
+        This may include setting motor parameters, control modes, or initial state.
+        """
+        pass
     
     def get_action(self) -> dict[str, float]:
-        if not self.is_connected:
+        if not self.connected:
             raise DeviceNotConnectedError(f"{self} is not connected.")
 
         for key in self.teleoperator_dora_node.recv_joint_status:
@@ -222,9 +253,8 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
         action = {
             f"{motor}.pos": val 
             for name, val in self.teleoperator_dora_node.recv_joint.items() 
-                for _arm, bus in self.leader_arms.items() 
-                    for motor in bus.motors
-                        if motor in name
+                for motor in self.motors
+                    if motor in name
         }
         dt_ms = (time.perf_counter() - start) * 1e3
         logger.debug(f"{self} read state: {dt_ms:.1f}ms")
@@ -232,7 +262,7 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
         return action
 
     def send_feedback(self, feedback: dict[str, Any]) -> None:
-        if not self.is_connected:
+        if not self.connected:
             raise DeviceNotConnectedError(
                 f"{self} is not connected. You need to run `robot.connect()`."
             )
@@ -250,7 +280,7 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
         return self.status.to_json()
 
     def disconnect(self):
-        if not self.is_connected:
+        if not self.connected:
             raise DeviceNotConnectedError(
                 "Teleoperator is not connected. You need to run `teleoperator.connect()` before disconnecting."
             )
@@ -258,9 +288,9 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
         self.teleoperator_dora_node.running = False
         self.teleoperator_dora_node.thread.join()
 
-        self.is_connected = False
+        self.connected = False
         logger.info(f"{self} is not connected.")
 
     def __del__(self):
-        if getattr(self, "is_connected", False):
+        if getattr(self, "connected", False):
             self.disconnect()
