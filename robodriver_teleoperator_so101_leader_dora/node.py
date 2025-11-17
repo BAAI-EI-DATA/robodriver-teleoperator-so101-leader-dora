@@ -37,7 +37,7 @@ class SO101LeaderDoraTeleoperatorNode(DoraTeleoperatorNode):
                 event_id = event["id"]
                 data = event["value"].to_numpy()
                 # meta_data = json.loads(event["metadata"])
-                # logger.debug(f"{self} recv event_id:{event_id}, value:{data}")
+                logger.debug(f"{self} recv event_id:{event_id}, value:{data}")
 
                 if 'joint' in event_id:
                     if data is not None:
