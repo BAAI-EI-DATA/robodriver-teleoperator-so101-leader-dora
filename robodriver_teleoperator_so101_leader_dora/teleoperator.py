@@ -251,9 +251,9 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
         # Read arm position
         start = time.perf_counter()
         action = {
-            f"{motor}.pos": val 
-            for name, val in self.teleoperator_dora_node.recv_joint.items() 
-                for motor in self.motors
+            f"{motor}.pos": val
+            for motor in self.motors
+                for name, val in self.teleoperator_dora_node.recv_joint.items() 
                     if motor in name
         }
         dt_ms = (time.perf_counter() - start) * 1e3
