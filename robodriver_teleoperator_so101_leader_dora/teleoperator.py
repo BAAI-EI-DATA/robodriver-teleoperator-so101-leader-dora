@@ -257,7 +257,7 @@ class SO101LeaderDoraTeleoperator(Teleoperator):
                     if motor in name
         }
         dt_ms = (time.perf_counter() - start) * 1e3
-        logger.debug(f"{self} read state: {dt_ms:.1f}ms")
+        logger.debug(f"{self} read state: {dt_ms:.1f} ms")
 
         return action
 
