@@ -20,7 +20,7 @@ class SO101LeaderDoraTeleoperatorNode(DoraTeleoperatorNode):
     def __init__(self):
         self.node = Node("so101_leader_dora")
         
-        self.recv_joint: Dict[str, Any] = {}
+        self.recv_joint: Dict[str, float] = {}
         self.recv_joint_status: Dict[str, int] = {}
         self.lock = threading.Lock()
 
@@ -37,12 +37,13 @@ class SO101LeaderDoraTeleoperatorNode(DoraTeleoperatorNode):
                 event_id = event["id"]
                 data = event["value"].to_numpy()
                 # meta_data = json.loads(event["metadata"])
-                logger.debug(f"{self} \nrecv event_id:{event_id}, value:{data}")
+                # logger.debug(f"{self} \nrecv event_id:{event_id}, value:{data}")
 
                 if 'joint' in event_id:
                     if data is not None:
                         with self.lock:
-                            self.recv_joint[event_id] = data
+                            scalar_value = data.item()
+                            self.recv_joint[event_id] = scalar_value
                             self.recv_joint_status[event_id] = CONNECT_TIMEOUT_FRAME
 
             elif event["type"] == "STOP":
